@@ -1,0 +1,484 @@
+// =============================================================
+// Patient Registration System - Prisma Schema
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================
+// ENUMS
+// =============================================================
+
+enum Role {
+  PATIENT
+  STAFF
+  ADMIN
+  DOCTOR
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+}
+
+enum GovtIdType {
+  AADHAAR
+  PAN
+  PASSPORT
+  DRIVING_LICENSE
+  VOTER_ID
+}
+
+enum VisitType {
+  OPD
+  IPD
+  EMERGENCY
+  TELECONSULT
+  FOLLOW_UP
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  VIEW
+}
+
+enum OtpStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum AppointmentType {
+  IN_CLINIC
+  TELECONSULT
+  HOME_VISIT
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum LabReportStatus {
+  ORDERED
+  SAMPLE_COLLECTED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PrescriptionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// =============================================================
+// AUTH - User (authentication identity, separate from Patient)
+// =============================================================
+
+model User {
+  id         String   @id @default(uuid())
+  phone      String   @unique
+  role       Role     @default(PATIENT)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  otps       Otp[]
+  auditLogs  AuditLog[]
+  doctor     Doctor?
+
+  @@map("users")
+}
+
+model Otp {
+  id        String    @id @default(uuid())
+  userId    String
+  code      String
+  status    OtpStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+}
+
+// =============================================================
+// PATIENT - Permanent Identity Record
+// =============================================================
+
+model Patient {
+  id             String        @id @default(uuid())
+  uhid           String        @unique
+  firstName      String
+  lastName       String
+  dob            DateTime
+  gender         Gender
+  phone          String        @unique
+  email          String?
+  address        String?
+  city           String?
+  state          String?
+  pincode        String?
+  maritalStatus  MaritalStatus?
+  occupation     String?
+  govtIdType     GovtIdType?
+  govtIdNumber   String?
+  createdBy      String
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  emergencyContacts EmergencyContact[]
+  insurances        Insurance[]
+  medicalSnapshot   MedicalSnapshot?
+  consent           Consent?
+  visits            Visit[]
+  appointments      Appointment[]
+  prescriptions     Prescription[]
+  labReports        LabReport[]
+
+  @@index([phone])
+  @@index([uhid])
+  @@index([isActive])
+  @@map("patients")
+}
+
+// =============================================================
+// EMERGENCY CONTACT (1:N with Patient)
+// =============================================================
+
+model EmergencyContact {
+  id        String  @id @default(uuid())
+  patientId String
+  name      String
+  relation  String
+  phone     String
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("emergency_contacts")
+}
+
+// =============================================================
+// INSURANCE (1:N with Patient)
+// =============================================================
+
+model Insurance {
+  id                String   @id @default(uuid())
+  patientId         String
+  provider          String
+  policyNumber      String
+  policyHolderName  String
+  validTill         DateTime
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("insurances")
+}
+
+// =============================================================
+// MEDICAL SNAPSHOT (1:1 with Patient) - Light intake
+// =============================================================
+
+model MedicalSnapshot {
+  id                  String   @id @default(uuid())
+  patientId           String   @unique
+  allergies           String[]
+  chronicConditions   String[]
+  currentMedication   String[]
+  pastSurgeries       String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_snapshots")
+}
+
+// =============================================================
+// CONSENT (1:1 with Patient)
+// =============================================================
+
+model Consent {
+  id                     String   @id @default(uuid())
+  patientId              String   @unique
+  dataPrivacyAccepted    Boolean  @default(false)
+  treatmentConsent       Boolean  @default(false)
+  communicationConsent   Boolean  @default(false)
+  acceptedAt             DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("consents")
+}
+
+// =============================================================
+// VISIT - Transactional Encounter (1:N with Patient)
+// =============================================================
+
+model Visit {
+  id              String    @id @default(uuid())
+  patientId       String
+  doctorId        String?
+  appointmentId   String?   @unique
+  visitType       VisitType
+  department      String
+  doctorName      String
+  visitDate       DateTime
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor          Doctor?       @relation(fields: [doctorId], references: [id])
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id])
+  vitalSigns      VitalSigns?
+  prescriptions   Prescription[]
+  labReports      LabReport[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([visitDate])
+  @@map("visits")
+}
+
+// =============================================================
+// VITAL SIGNS (1:1 with Visit)
+// =============================================================
+
+model VitalSigns {
+  id               String   @id @default(uuid())
+  visitId          String   @unique
+  bloodPressure    String?
+  pulseRate        Int?
+  temperature      Decimal?
+  weight           Decimal?
+  height           Decimal?
+  bmi              Decimal?
+  oxygenSaturation Int?
+  respiratoryRate  Int?
+  recordedAt       DateTime @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  @@map("vital_signs")
+}
+
+// =============================================================
+// DOCTOR - Practitioner Profile
+// =============================================================
+
+model Doctor {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  registrationNo   String   @unique
+  firstName        String
+  lastName         String
+  specialization   String
+  qualification    String
+  experienceYears  Int      @default(0)
+  phone            String
+  email            String?
+  consultationFee  Decimal  @default(0)
+  isActive         Boolean  @default(true)
+  bio              String?
+  languages        String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id])
+  slots         DoctorSlot[]
+  appointments  Appointment[]
+  visits        Visit[]
+  prescriptions Prescription[]
+
+  @@index([specialization])
+  @@index([isActive])
+  @@map("doctors")
+}
+
+// =============================================================
+// DOCTOR SLOT - Weekly availability template
+// =============================================================
+
+model DoctorSlot {
+  id            String    @id @default(uuid())
+  doctorId      String
+  dayOfWeek     DayOfWeek
+  startTime     String
+  endTime       String
+  slotDuration  Int       @default(15)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  doctor       Doctor        @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([doctorId])
+  @@index([dayOfWeek])
+  @@map("doctor_slots")
+}
+
+// =============================================================
+// APPOINTMENT - Booking (1:N with Patient, 1:N with Doctor)
+// =============================================================
+
+model Appointment {
+  id              String            @id @default(uuid())
+  patientId       String
+  doctorId        String
+  slotId          String?
+  appointmentDate DateTime
+  startTime       String
+  endTime         String
+  type            AppointmentType   @default(IN_CLINIC)
+  status          AppointmentStatus @default(PENDING)
+  reasonForVisit  String?
+  notes           String?
+  cancelReason    String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  patient Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor      @relation(fields: [doctorId], references: [id])
+  slot    DoctorSlot? @relation(fields: [slotId], references: [id])
+  visit   Visit?
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
+}
+
+// =============================================================
+// PRESCRIPTION - Digital prescription linked to a Visit
+// =============================================================
+
+model Prescription {
+  id        String             @id @default(uuid())
+  visitId   String
+  patientId String
+  doctorId  String
+  status    PrescriptionStatus @default(ACTIVE)
+  diagnosis String?
+  notes     String?
+  validTill DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  visit     Visit                @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  patient   Patient              @relation(fields: [patientId], references: [id])
+  doctor    Doctor               @relation(fields: [doctorId], references: [id])
+  medicines PrescribedMedicine[]
+
+  @@index([visitId])
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("prescriptions")
+}
+
+// =============================================================
+// PRESCRIBED MEDICINE - Line items within a Prescription
+// =============================================================
+
+model PrescribedMedicine {
+  id             String  @id @default(uuid())
+  prescriptionId String
+  medicineName   String
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+  @@map("prescribed_medicines")
+}
+
+// =============================================================
+// LAB REPORT - Diagnostic orders and results
+// =============================================================
+
+model LabReport {
+  id           String          @id @default(uuid())
+  patientId    String
+  visitId      String?
+  orderedBy    String
+  testName     String
+  labName      String?
+  status       LabReportStatus @default(ORDERED)
+  reportUrl    String?
+  reportNotes  String?
+  orderedAt    DateTime        @default(now())
+  completedAt  DateTime?
+  updatedAt    DateTime        @updatedAt
+
+  visit   Visit?   @relation(fields: [visitId], references: [id])
+  patient Patient  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@index([visitId])
+  @@index([status])
+  @@map("lab_reports")
+}
+
+// =============================================================
+// AUDIT LOG - System-wide audit trail
+// =============================================================
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  entityType  String
+  entityId    String
+  action      AuditAction
+  performedBy String
+  metadata    Json?
+  timestamp   DateTime    @default(now())
+
+  user User? @relation(fields: [performedBy], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([performedBy])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
