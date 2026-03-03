@@ -25,6 +25,7 @@ import { RegisterPatientDto } from './dto/register-patient.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -36,12 +37,12 @@ export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
   @Post('register')
-  @Roles(Role.STAFF, Role.ADMIN)
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Register a new patient',
     description:
-      'Creates a permanent patient identity with a unique UHID. Enforces duplicate phone check. Only STAFF and ADMIN can register patients.',
+      'Creates a permanent patient identity with a unique UHID. Enforces duplicate phone check. Public endpoint - no authentication required.',
   })
   @ApiResponse({
     status: 201,
@@ -81,14 +82,9 @@ export class PatientController {
     },
   })
   @ApiResponse({ status: 400, description: 'Validation failed' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - insufficient role' })
   @ApiResponse({ status: 409, description: 'Phone number already registered' })
-  register(
-    @Body() dto: RegisterPatientDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    return this.patientService.register(dto, user.sub);
+  register(@Body() dto: RegisterPatientDto) {
+    return this.patientService.register(dto, 'system');
   }
 
   @Get('search')
