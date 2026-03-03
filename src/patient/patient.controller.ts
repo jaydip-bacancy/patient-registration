@@ -31,7 +31,6 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Patients')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('patients')
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
@@ -88,6 +87,7 @@ export class PatientController {
   }
 
   @Get('search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STAFF, Role.ADMIN)
   @ApiOperation({
     summary: 'Search patients by phone',
@@ -115,6 +115,7 @@ export class PatientController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({
     summary: 'Get patient by ID',
@@ -128,6 +129,7 @@ export class PatientController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
