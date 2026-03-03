@@ -2,8 +2,22 @@ import { PrismaClient, Role } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Must match src/common/constants.ts
+const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
+
 async function main() {
   console.log('Seeding database...');
+
+  const systemUser = await prisma.user.upsert({
+    where: { id: SYSTEM_USER_ID },
+    update: {},
+    create: {
+      id: SYSTEM_USER_ID,
+      phone: '+910000000000',
+      role: Role.STAFF,
+      isVerified: true,
+    },
+  });
 
   const admin = await prisma.user.upsert({
     where: { phone: '+910000000001' },
@@ -51,6 +65,7 @@ async function main() {
     ],
   });
 
+  console.log(`System user  : ${systemUser.id} (${systemUser.phone})`);
   console.log(`Admin user   : ${admin.id} (${admin.phone})`);
   console.log(`Staff user   : ${staff.id} (${staff.phone})`);
   console.log(`Doctor user  : ${doctorUser.id} (${doctorUser.phone})`);

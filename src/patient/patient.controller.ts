@@ -28,6 +28,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { SYSTEM_USER_ID } from '../common/constants';
 
 @ApiTags('Patients')
 @ApiBearerAuth('access-token')
@@ -83,7 +84,7 @@ export class PatientController {
   @ApiResponse({ status: 400, description: 'Validation failed' })
   @ApiResponse({ status: 409, description: 'Phone number already registered' })
   register(@Body() dto: RegisterPatientDto) {
-    return this.patientService.register(dto, 'system');
+    return this.patientService.register(dto, SYSTEM_USER_ID);
   }
 
   @Get('search')

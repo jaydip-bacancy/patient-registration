@@ -123,11 +123,15 @@ Error responses:
   const port = parseInt(process.env.PORT || '3000', 10);
   await app.listen(port);
 
+  const host = process.env.HOST || 'localhost';
+  const baseUrl =
+    process.env.BASE_URL || `http://${host}:${port}`;
   console.log(`\n==========================================`);
   console.log(`  Patient Registration System`);
   console.log(`==========================================`);
-  console.log(`  App:     http://localhost:${port}/${apiPrefix}`);
-  console.log(`  Docs:    http://localhost:${port}/docs`);
+  console.log(`  URL:     ${baseUrl}`);
+  console.log(`  App:     ${baseUrl}/${apiPrefix}`);
+  console.log(`  Docs:    ${baseUrl}/docs`);
   console.log(`  Env:     ${process.env.NODE_ENV || 'development'}`);
   console.log(`==========================================\n`);
 }
