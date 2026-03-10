@@ -1,11 +1,14 @@
 import {
-  Injectable,
   BadRequestException,
+  ConflictException,
+  Injectable,
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
+import { RegisterAdminDto } from './dto/register-admin.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Role, OtpStatus } from '@prisma/client';
@@ -18,16 +21,14 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async sendOtp(dto: SendOtpDto): Promise<{ message: string; otp?: string }> {
-    let user = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
     if (!user) {
-      user = await this.prisma.user.create({
-        data: { phone: dto.phone, role: Role.PATIENT },
-      });
-      this.logger.log(`New user created for phone: ${dto.phone}`);
+      throw new BadRequestException('Email not registered. Please register first.');
     }
 
     // Expire all previous pending OTPs for this user
@@ -48,14 +49,13 @@ export class AuthService {
       },
     });
 
-    // In production: send via SMS provider (Twilio, MSG91, etc.)
-    this.logger.log(`OTP for ${dto.phone}: ${otpCode} (mock - not sent via SMS)`);
+    await this.emailService.sendOtpEmail(dto.email, otpCode);
 
     const response: { message: string; otp?: string } = {
-      message: `OTP sent to ${dto.phone}`,
+      message: `OTP sent to ${dto.email}`,
     };
 
-    // Expose OTP only in non-production environments
+    // Expose OTP only in non-production environments (for testing without email)
     if (process.env.NODE_ENV !== 'production') {
       response.otp = otpCode;
     }
@@ -66,12 +66,12 @@ export class AuthService {
   async verifyOtp(dto: VerifyOtpDto): Promise<{
     accessToken: string;
     refreshToken: string;
-    user: { id: string; phone: string; role: Role };
+    user: { id: string; email: string; role: Role };
   }> {
-    const user = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
     if (!user) {
-      throw new UnauthorizedException('Phone number not registered');
+      throw new UnauthorizedException('Email not registered');
     }
 
     const otpRecord = await this.prisma.otp.findFirst({
@@ -99,7 +99,7 @@ export class AuthService {
       }),
     ]);
 
-    const payload: JwtPayload = { sub: user.id, phone: user.phone, role: user.role };
+    const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
@@ -115,7 +115,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      user: { id: user.id, phone: user.phone, role: user.role },
+      user: { id: user.id, email: user.email, role: user.role },
     };
   }
 
@@ -130,7 +130,7 @@ export class AuthService {
         throw new UnauthorizedException('User not found or not verified');
       }
 
-      const newPayload: JwtPayload = { sub: user.id, phone: user.phone, role: user.role };
+      const newPayload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
       const accessToken = await this.jwtService.signAsync(newPayload, {
         secret: process.env.JWT_SECRET,
         expiresIn: process.env.JWT_EXPIRES_IN || '15m',
@@ -140,6 +140,19 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+  }
+
+  async registerAdmin(dto: RegisterAdminDto): Promise<{ message: string }> {
+    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existing) {
+      throw new ConflictException(`User with email ${dto.email} already exists`);
+    }
+
+    await this.prisma.user.create({
+      data: { email: dto.email, role: Role.ADMIN, isVerified: true },
+    });
+    this.logger.log(`Admin registered: ${dto.email}`);
+    return { message: 'Admin registered. They can now login via OTP.' };
   }
 
   private generateOtp(): string {

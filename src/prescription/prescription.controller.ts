@@ -16,24 +16,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Prescriptions')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('prescriptions')
 export class PrescriptionController {
   constructor(private readonly prescriptionService: PrescriptionService) {}
 
   @Post()
-  @Roles(Role.DOCTOR, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Issue a digital prescription for a visit (Doctor/Admin)' })
   @ApiResponse({ status: 201, description: 'Prescription created' })
@@ -43,7 +39,6 @@ export class PrescriptionController {
   }
 
   @Get(':id')
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get a prescription by ID' })
   @ApiParam({ name: 'id', description: 'Prescription UUID' })
   @ApiResponse({ status: 200, description: 'Prescription details' })
@@ -54,13 +49,12 @@ export class PrescriptionController {
 
 @ApiTags('Prescriptions')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('visits/:visitId/prescriptions')
 export class VisitPrescriptionController {
   constructor(private readonly prescriptionService: PrescriptionService) {}
 
   @Get()
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get all prescriptions for a visit' })
   @ApiParam({ name: 'visitId', description: 'Visit UUID' })
   findByVisit(@Param('visitId', ParseUUIDPipe) visitId: string) {
@@ -70,13 +64,12 @@ export class VisitPrescriptionController {
 
 @ApiTags('Prescriptions')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/prescriptions')
 export class PatientPrescriptionController {
   constructor(private readonly prescriptionService: PrescriptionService) {}
 
   @Get()
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: "Get patient's full prescription history" })
   @ApiParam({ name: 'patientId', description: 'Patient UUID' })
   findByPatient(@Param('patientId', ParseUUIDPipe) patientId: string) {

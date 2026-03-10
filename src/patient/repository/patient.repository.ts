@@ -1,7 +1,7 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterPatientDto } from '../dto/register-patient.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 
 @Injectable()
 export class PatientRepository {
@@ -43,10 +43,19 @@ export class PatientRepository {
   ) {
     const client = tx || this.prisma;
 
-    const existing = await client.patient.findUnique({ where: { phone: dto.phone } });
-    if (existing) {
+    const existingPatient = await client.patient.findUnique({ where: { phone: dto.phone } });
+    if (existingPatient) {
       throw new ConflictException(`Patient with phone ${dto.phone} already exists`);
     }
+
+    const existingUser = await client.user.findUnique({ where: { email: dto.email } });
+    if (existingUser) {
+      throw new ConflictException(`User with email ${dto.email} already exists`);
+    }
+
+    await client.user.create({
+      data: { email: dto.email, role: Role.PATIENT, isVerified: true },
+    });
 
     return client.patient.create({
       data: {

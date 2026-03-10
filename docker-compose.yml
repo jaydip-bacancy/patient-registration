@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: nest-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localhost
+      POSTGRES_DB: patient-system
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  nestjs:
+      build: .
+      container_name: patient-registration-system
+      ports:
+        - "3008:3008"
+      depends_on:
+        postgres:
+          condition: service_healthy
+      environment:
+        DATABASE_URL: postgresql://postgres:localhost@postgres:5432/patient-system
+        JWT_SECRET: healthcare-jwt-secret-key-min-32-chars-change-in-prod
+        JWT_EXPIRES_IN: 15m
+        JWT_REFRESH_SECRET: healthcare-refresh-secret-key-min-32-chars-change-in-prod
+        JWT_REFRESH_EXPIRES_IN: 7d
+        OTP_EXPIRY_MINUTES: 5
+        OTP_LENGTH: 6
+        GMAIL_USER: jaydip.gambhava@bacancy.com
+        GMAIL_APP_PASSWORD: wpna wdic sook self
+        GMAIL_FROM: Patient Registration <jaydip.gambhava@bacancy.com>
+        PORT: 3008
+        NODE_ENV: development
+        APP_NAME: Patient Registration System
+        API_PREFIX: api/v1
+        ALLOWED_ORIGINS: http://localhost:3000,http://localhost:4200,http://localhost:5174

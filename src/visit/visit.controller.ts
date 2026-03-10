@@ -16,24 +16,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { VisitService } from './visit.service';
 import { CreateVisitDto } from './dto/create-visit.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Visits')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('visits')
 export class VisitController {
   constructor(private readonly visitService: VisitService) {}
 
   @Post()
-  @Roles(Role.STAFF, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create a new visit (transactional encounter)',
@@ -77,7 +73,6 @@ export class VisitController {
   }
 
   @Get(':id')
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get a visit by ID' })
   @ApiParam({ name: 'id', description: 'Visit UUID', type: String })
   @ApiResponse({ status: 200, description: 'Visit found' })
@@ -90,13 +85,12 @@ export class VisitController {
 // ─── Nested patient visits route ───────────────────────────────────────────
 @ApiTags('Visits')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/visits')
 export class PatientVisitController {
   constructor(private readonly visitService: VisitService) {}
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({
     summary: 'Get all visits for a patient',
     description: 'Returns visit history for the given patient, ordered by most recent first.',

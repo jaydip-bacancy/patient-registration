@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { createTestApp, createPrismaMock } from '../helpers/app-bootstrap';
 import {
-  mockStaffUser,
+  mockAdminUser,
   mockPatient,
   mockDoctor,
   mockAppointment,
@@ -15,7 +15,7 @@ import { AppointmentStatus } from '@prisma/client';
 describe('Appointment — E2E', () => {
   let app: INestApplication;
   let prisma: ReturnType<typeof createPrismaMock>;
-  let staffToken: string;
+  let adminToken: string;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = 'test-secret-for-testing';
@@ -23,7 +23,7 @@ describe('Appointment — E2E', () => {
     prisma = createPrismaMock();
     app = await createTestApp(prisma);
 
-    staffToken = generateTestToken(mockStaffUser.id, mockStaffUser.phone, mockStaffUser.role);
+    adminToken = generateTestToken(mockAdminUser.id, mockAdminUser.email, mockAdminUser.role);
   });
 
   afterAll(async () => {
@@ -31,7 +31,7 @@ describe('Appointment — E2E', () => {
   });
 
   beforeEach(() => {
-    prisma.user.findUnique.mockResolvedValue(mockStaffUser);
+    prisma.user.findUnique.mockResolvedValue(mockAdminUser);
     prisma.auditLog.create.mockResolvedValue({} as never);
   });
 
@@ -48,7 +48,7 @@ describe('Appointment — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/appointments')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(createAppointmentDto)
         .expect(201);
 
@@ -61,7 +61,7 @@ describe('Appointment — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/appointments')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(createAppointmentDto)
         .expect(404);
 
@@ -75,7 +75,7 @@ describe('Appointment — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/appointments')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(createAppointmentDto)
         .expect(409);
 
@@ -102,7 +102,7 @@ describe('Appointment — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/appointments/${mockAppointment.id}/status`)
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ status: AppointmentStatus.CONFIRMED })
         .expect(200);
 
@@ -114,7 +114,7 @@ describe('Appointment — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/appointments/${mockAppointment.id}/status`)
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ status: AppointmentStatus.CANCELLED })
         .expect(400);
 
@@ -131,7 +131,7 @@ describe('Appointment — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .get(`/api/v1/patients/${mockPatient.id}/appointments`)
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(res.body.data.total).toBe(1);

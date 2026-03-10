@@ -17,25 +17,21 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { LabReportService } from './lab-report.service';
 import { CreateLabReportDto } from './dto/create-lab-report.dto';
 import { UpdateLabReportDto } from './dto/update-lab-report.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Lab Reports')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('lab-reports')
 export class LabReportController {
   constructor(private readonly labReportService: LabReportService) {}
 
   @Post()
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Order a new lab test for a patient visit' })
   @ApiResponse({ status: 201, description: 'Lab test ordered' })
@@ -45,7 +41,6 @@ export class LabReportController {
   }
 
   @Get(':id')
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get lab report by ID' })
   @ApiParam({ name: 'id', description: 'Lab report UUID' })
   @ApiResponse({ status: 200, description: 'Lab report details' })
@@ -54,7 +49,6 @@ export class LabReportController {
   }
 
   @Patch(':id')
-  @Roles(Role.STAFF, Role.ADMIN)
   @ApiOperation({ summary: 'Update lab report status and/or upload report URL' })
   @ApiParam({ name: 'id', description: 'Lab report UUID' })
   @ApiResponse({ status: 200, description: 'Lab report updated' })
@@ -69,13 +63,12 @@ export class LabReportController {
 
 @ApiTags('Lab Reports')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/lab-reports')
 export class PatientLabReportController {
   constructor(private readonly labReportService: LabReportService) {}
 
   @Get()
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: "Get patient's full lab report history" })
   @ApiParam({ name: 'patientId', description: 'Patient UUID' })
   findByPatient(@Param('patientId', ParseUUIDPipe) patientId: string) {
@@ -85,13 +78,12 @@ export class PatientLabReportController {
 
 @ApiTags('Lab Reports')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('visits/:visitId/lab-reports')
 export class VisitLabReportController {
   constructor(private readonly labReportService: LabReportService) {}
 
   @Get()
-  @Roles(Role.DOCTOR, Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get all lab reports ordered during a visit' })
   @ApiParam({ name: 'visitId', description: 'Visit UUID' })
   findByVisit(@Param('visitId', ParseUUIDPipe) visitId: string) {

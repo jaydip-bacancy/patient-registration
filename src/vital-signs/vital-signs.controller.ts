@@ -17,22 +17,18 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { VitalSignsService } from './vital-signs.service';
 import { RecordVitalSignsDto } from './dto/record-vital-signs.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('Vital Signs')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('visits/:visitId/vital-signs')
 export class VitalSignsController {
   constructor(private readonly vitalSignsService: VitalSignsService) {}
 
   @Post()
-  @Roles(Role.STAFF, Role.DOCTOR, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Record vital signs for a visit' })
   @ApiParam({ name: 'visitId', description: 'Visit UUID' })
@@ -47,7 +43,6 @@ export class VitalSignsController {
   }
 
   @Get()
-  @Roles(Role.STAFF, Role.DOCTOR, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get vital signs for a visit' })
   @ApiParam({ name: 'visitId', description: 'Visit UUID' })
   @ApiResponse({ status: 200, description: 'Vital signs data' })
@@ -57,7 +52,6 @@ export class VitalSignsController {
   }
 
   @Patch()
-  @Roles(Role.STAFF, Role.DOCTOR, Role.ADMIN)
   @ApiOperation({ summary: 'Update vital signs for a visit (partial update allowed)' })
   @ApiParam({ name: 'visitId', description: 'Visit UUID' })
   @ApiResponse({ status: 200, description: 'Vital signs updated' })

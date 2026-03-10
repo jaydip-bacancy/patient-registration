@@ -16,7 +16,7 @@ import {
 
 describe('Patient — Integration', () => {
   let prisma: PrismaClient;
-  let staffUserId: string;
+  let adminUserId: string;
 
   beforeAll(() => {
     setupIntegrationDb();
@@ -24,10 +24,10 @@ describe('Patient — Integration', () => {
   });
 
   beforeEach(async () => {
-    const staff = await prisma.user.create({
-      data: { phone: '+910000000002', role: 'STAFF', isVerified: true },
+    const admin = await prisma.user.create({
+      data: { email: 'admin@test.com', role: 'ADMIN', isVerified: true },
     });
-    staffUserId = staff.id;
+    adminUserId = admin.id;
   });
 
   afterEach(async () => clearDatabase(prisma));
@@ -46,7 +46,7 @@ describe('Patient — Integration', () => {
           dob: new Date('1990-05-15'),
           gender: 'MALE',
           phone: '+919876543210',
-          createdBy: staffUserId,
+          createdBy: adminUserId,
         },
       });
 
@@ -64,7 +64,7 @@ describe('Patient — Integration', () => {
           dob: new Date('1990-05-15'),
           gender: 'MALE',
           phone: '+919876543210',
-          createdBy: staffUserId,
+          createdBy: adminUserId,
         },
       });
 
@@ -77,7 +77,7 @@ describe('Patient — Integration', () => {
             dob: new Date('1992-01-01'),
             gender: 'FEMALE',
             phone: '+919876543210', // duplicate
-            createdBy: staffUserId,
+            createdBy: adminUserId,
           },
         }),
       ).rejects.toThrow();
@@ -93,7 +93,7 @@ describe('Patient — Integration', () => {
             dob: new Date('1985-08-20'),
             gender: 'FEMALE',
             phone: '+919876543211',
-            createdBy: staffUserId,
+            createdBy: adminUserId,
           },
         });
 
@@ -131,7 +131,7 @@ describe('Patient — Integration', () => {
           dob: new Date('2000-01-01'),
           gender: 'MALE',
           phone: '+919876543215',
-          createdBy: staffUserId,
+          createdBy: adminUserId,
         },
       });
 
@@ -157,7 +157,7 @@ describe('Patient — Integration', () => {
           dob: new Date('1995-03-10'),
           gender: 'FEMALE',
           phone: '+919876543216',
-          createdBy: staffUserId,
+          createdBy: adminUserId,
         },
       });
 
@@ -166,7 +166,7 @@ describe('Patient — Integration', () => {
           entityType: 'Patient',
           entityId: patient.id,
           action: 'CREATE',
-          performedBy: staffUserId,
+          performedBy: adminUserId,
           metadata: { uhid: patient.uhid },
         },
       });
@@ -190,7 +190,7 @@ describe('Patient — Integration', () => {
           dob: new Date('1995-03-10'),
           gender: 'MALE',
           phone: '+919900001234',
-          createdBy: staffUserId,
+          createdBy: adminUserId,
         },
       });
       await prisma.patient.create({
@@ -201,7 +201,7 @@ describe('Patient — Integration', () => {
           dob: new Date('1996-04-11'),
           gender: 'FEMALE',
           phone: '+919900005678',
-          createdBy: staffUserId,
+          createdBy: adminUserId,
         },
       });
 

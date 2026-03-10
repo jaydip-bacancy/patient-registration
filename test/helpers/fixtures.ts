@@ -2,18 +2,9 @@ import { Role, Gender, AppointmentStatus, AppointmentType, OtpStatus } from '@pr
 
 // ── Users ────────────────────────────────────────────────────────────────────
 
-export const mockStaffUser = {
-  id: 'staff-user-uuid-0001',
-  phone: '+910000000002',
-  role: Role.STAFF,
-  isVerified: true,
-  createdAt: new Date('2026-01-01'),
-  updatedAt: new Date('2026-01-01'),
-};
-
 export const mockAdminUser = {
   id: 'admin-user-uuid-0001',
-  phone: '+910000000001',
+  email: 'admin@example.com',
   role: Role.ADMIN,
   isVerified: true,
   createdAt: new Date('2026-01-01'),
@@ -22,7 +13,7 @@ export const mockAdminUser = {
 
 export const mockPatientUser = {
   id: 'patient-user-uuid-001',
-  phone: '+919876543210',
+  email: 'user@example.com',
   role: Role.PATIENT,
   isVerified: false,
   createdAt: new Date('2026-01-01'),
@@ -57,7 +48,7 @@ export const mockPatient = {
   occupation: 'Software Engineer',
   govtIdType: null,
   govtIdNumber: null,
-  createdBy: mockStaffUser.id,
+  createdBy: mockAdminUser.id,
   isActive: true,
   createdAt: new Date('2026-03-01'),
   updatedAt: new Date('2026-03-01'),

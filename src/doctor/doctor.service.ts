@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { CreateDoctorSlotDto } from './dto/create-doctor-slot.dto';
@@ -35,9 +36,20 @@ export class DoctorService {
       );
     }
 
-    const doctor = await this.prisma.doctor.create({
-      data: {
-        userId: dto.userId,
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (existingUser) {
+      throw new ConflictException(`User with email "${dto.email}" already exists`);
+    }
+
+    const doctor = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email: dto.email, role: Role.DOCTOR, isVerified: true },
+      });
+      return tx.doctor.create({
+        data: {
+          userId: user.id,
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
@@ -50,6 +62,7 @@ export class DoctorService {
         bio: dto.bio,
         languages: dto.languages ?? [],
       },
+      });
     });
 
     await this.auditService.log({

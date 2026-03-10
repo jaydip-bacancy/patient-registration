@@ -19,25 +19,21 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Appointments')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('appointments')
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
   @Post()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Book an appointment for a patient with a doctor' })
   @ApiResponse({ status: 201, description: 'Appointment booked successfully' })
@@ -48,7 +44,6 @@ export class AppointmentController {
   }
 
   @Get(':id')
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get appointment details by ID' })
   @ApiParam({ name: 'id', description: 'Appointment UUID' })
   @ApiResponse({ status: 200, description: 'Appointment details' })
@@ -58,7 +53,6 @@ export class AppointmentController {
   }
 
   @Patch(':id/status')
-  @Roles(Role.STAFF, Role.ADMIN, Role.DOCTOR)
   @ApiOperation({ summary: 'Update appointment status (confirm, cancel, complete, no-show)' })
   @ApiParam({ name: 'id', description: 'Appointment UUID' })
   @ApiResponse({ status: 200, description: 'Status updated' })
@@ -74,13 +68,12 @@ export class AppointmentController {
 
 @ApiTags('Appointments')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/appointments')
 export class PatientAppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get all appointments for a patient' })
   @ApiParam({ name: 'patientId', description: 'Patient UUID' })
   @ApiResponse({ status: 200, description: 'List of appointments' })
@@ -91,13 +84,12 @@ export class PatientAppointmentController {
 
 @ApiTags('Appointments')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('doctors/:doctorId/appointments')
 export class DoctorAppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.DOCTOR)
   @ApiOperation({ summary: "Get a doctor's appointment schedule, optionally filtered by date" })
   @ApiParam({ name: 'doctorId', description: 'Doctor UUID' })
   @ApiQuery({ name: 'date', required: false, description: 'Filter by date (YYYY-MM-DD)', example: '2026-03-15' })

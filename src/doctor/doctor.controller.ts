@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -18,35 +19,32 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { DoctorService } from './doctor.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { CreateDoctorSlotDto } from './dto/create-doctor-slot.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { SYSTEM_USER_ID } from '../common/constants';
 
 @ApiTags('Doctors')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('doctors')
 export class DoctorController {
   constructor(private readonly doctorService: DoctorService) {}
 
+  @Public()
   @Post()
-  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a doctor profile (Admin only)' })
+  @ApiOperation({ summary: 'Register doctor (Public)' })
   @ApiResponse({ status: 201, description: 'Doctor profile created successfully' })
   @ApiResponse({ status: 409, description: 'Registration number or phone already exists' })
-  create(@Body() dto: CreateDoctorDto, @CurrentUser() user: JwtPayload) {
-    return this.doctorService.create(dto, user.sub);
+  create(@Body() dto: CreateDoctorDto) {
+    return this.doctorService.create(dto, SYSTEM_USER_ID);
   }
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'List all active doctors, optionally filtered by specialization' })
   @ApiQuery({ name: 'specialization', required: false, description: 'Filter by specialization (partial match)' })
   @ApiResponse({ status: 200, description: 'List of doctors' })
@@ -55,7 +53,6 @@ export class DoctorController {
   }
 
   @Get(':id')
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get doctor profile with availability slots' })
   @ApiParam({ name: 'id', description: 'Doctor UUID' })
   @ApiResponse({ status: 200, description: 'Doctor profile found' })
@@ -65,7 +62,6 @@ export class DoctorController {
   }
 
   @Post(':id/slots')
-  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Add a weekly availability slot to a doctor (Admin only)' })
   @ApiParam({ name: 'id', description: 'Doctor UUID' })
@@ -79,7 +75,6 @@ export class DoctorController {
   }
 
   @Get(':id/slots')
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get all active availability slots for a doctor' })
   @ApiParam({ name: 'id', description: 'Doctor UUID' })
   getSlots(@Param('id', ParseUUIDPipe) id: string) {
@@ -87,7 +82,6 @@ export class DoctorController {
   }
 
   @Get(':id/available-slots')
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get available (unbooked) time slots for a doctor on a given date' })
   @ApiParam({ name: 'id', description: 'Doctor UUID' })
   @ApiQuery({ name: 'date', required: true, description: 'Date in YYYY-MM-DD format', example: '2026-03-15' })

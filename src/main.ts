@@ -14,7 +14,7 @@ async function bootstrap() {
   app.useGlobalPipes(globalValidationPipe);
 
   app.enableCors({
-    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+    origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(','),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
@@ -37,7 +37,7 @@ The system separates two core domains:
 
 ## Authentication Flow
 
-1. \`POST /auth/send-otp\` → Receive OTP on phone
+1. \`POST /auth/send-otp\` → Receive OTP on email
 2. \`POST /auth/verify-otp\` → Receive \`accessToken\` + \`refreshToken\`
 3. Include \`Authorization: Bearer <accessToken>\` on all protected routes
 4. \`POST /auth/refresh\` → Get new access token using refresh token
@@ -57,7 +57,7 @@ Visit creation is independent: \`POST /visits\`
 | Role    | Permissions |
 |---------|-------------|
 | ADMIN   | Full access including soft-delete and audit logs |
-| STAFF   | Register patients, create visits, add records |
+| ADMIN   | Register patients, create visits, add records |
 | PATIENT | Read-only access to own records |
 
 ## Response Format
@@ -80,7 +80,7 @@ Error responses:
   "statusCode": 400,
   "error": "Bad Request",
   "message": "Validation failed",
-  "details": [ { "field": "phone", "constraints": ["must be a valid phone number"] } ],
+  "details": [ { "field": "email", "constraints": ["must be a valid email"] } ],
   "path": "/api/v1/patients/register",
   "method": "POST",
   "timestamp": "2024-01-15T10:30:00.000Z"

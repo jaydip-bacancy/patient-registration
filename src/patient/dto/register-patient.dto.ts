@@ -43,10 +43,12 @@ export class RegisterPatientDto {
   @IsPhoneNumber(null as any)
   phone: string;
 
-  @ApiPropertyOptional({ description: 'Email address', example: 'raj.sharma@example.com' })
-  @IsOptional()
+  @ApiProperty({
+    description: 'Email address (used for login after registration)',
+    example: 'raj.sharma@example.com',
+  })
   @IsEmail()
-  email?: string;
+  email: string;
 
   @ApiPropertyOptional({ description: 'Street address', example: '12B, MG Road' })
   @IsOptional()

@@ -22,36 +22,32 @@ describe('Auth — E2E', () => {
   // ── POST /auth/send-otp ────────────────────────────────────────────────────
 
   describe('POST /api/v1/auth/send-otp', () => {
-    it('returns 201 and OTP when phone is new', async () => {
+    it('returns 400 when email is not registered', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue(mockPatientUser);
-      prisma.otp.updateMany.mockResolvedValue({ count: 0 });
-      prisma.otp.create.mockResolvedValue(mockOtp);
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/send-otp')
-        .send({ phone: '+919876543210' })
-        .expect(201);
+        .send({ email: 'unknown@example.com' })
+        .expect(400);
 
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.message).toContain('+919876543210');
-      expect(res.body.data.otp).toBeDefined();
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('not registered');
     });
 
-    it('returns 201 when phone already exists (re-sends OTP)', async () => {
+    it('returns 200 when email already exists (sends OTP)', async () => {
       prisma.user.findUnique.mockResolvedValue(mockPatientUser);
       prisma.otp.updateMany.mockResolvedValue({ count: 1 });
       prisma.otp.create.mockResolvedValue(mockOtp);
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/send-otp')
-        .send({ phone: '+919876543210' })
-        .expect(201);
+        .send({ email: 'user@example.com' })
+        .expect(200);
 
       expect(res.body.success).toBe(true);
     });
 
-    it('returns 400 when phone is missing', async () => {
+    it('returns 400 when email is missing', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/send-otp')
         .send({})
@@ -61,10 +57,10 @@ describe('Auth — E2E', () => {
       expect(res.body.statusCode).toBe(400);
     });
 
-    it('returns 400 when phone is not in E.164 format', async () => {
+    it('returns 400 when email format is invalid', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/send-otp')
-        .send({ phone: '9876543210' })
+        .send({ email: 'invalid-email' })
         .expect(400);
 
       expect(res.body.success).toBe(false);
@@ -74,15 +70,15 @@ describe('Auth — E2E', () => {
   // ── POST /auth/verify-otp ──────────────────────────────────────────────────
 
   describe('POST /api/v1/auth/verify-otp', () => {
-    it('returns 201 with accessToken and refreshToken on valid OTP', async () => {
+    it('returns 200 with accessToken and refreshToken on valid OTP', async () => {
       prisma.user.findUnique.mockResolvedValue(mockPatientUser);
       prisma.otp.findFirst.mockResolvedValue(mockOtp);
       prisma.$transaction.mockResolvedValue([]);
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/verify-otp')
-        .send({ phone: '+919876543210', otp: '482910' })
-        .expect(201);
+        .send({ email: 'user@example.com', otp: '482910' })
+        .expect(200);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
@@ -96,19 +92,19 @@ describe('Auth — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/verify-otp')
-        .send({ phone: '+919876543210', otp: '000000' })
+        .send({ email: 'user@example.com', otp: '000000' })
         .expect(401);
 
       expect(res.body.success).toBe(false);
       expect(res.body.message).toBe('Invalid or expired OTP');
     });
 
-    it('returns 401 when phone is not registered', async () => {
+    it('returns 401 when email is not registered', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/verify-otp')
-        .send({ phone: '+919876543210', otp: '123456' })
+        .send({ email: 'user@example.com', otp: '123456' })
         .expect(401);
 
       expect(res.body.success).toBe(false);
@@ -117,7 +113,7 @@ describe('Auth — E2E', () => {
     it('returns 400 when OTP length is not 6', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/verify-otp')
-        .send({ phone: '+919876543210', otp: '123' })
+        .send({ email: 'user@example.com', otp: '123' })
         .expect(400);
 
       expect(res.body.success).toBe(false);

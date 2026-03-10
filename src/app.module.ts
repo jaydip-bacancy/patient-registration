@@ -15,7 +15,6 @@ import { PrescriptionModule } from './prescription/prescription.module';
 import { LabReportModule } from './lab-report/lab-report.module';
 import { VitalSignsModule } from './vital-signs/vital-signs.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { RolesGuard } from './auth/guards/roles.guard';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
@@ -44,10 +43,6 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
     },
     {
       provide: APP_INTERCEPTOR,

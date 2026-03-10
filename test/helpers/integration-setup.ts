@@ -1,7 +1,7 @@
 /**
  * Integration test database helpers.
  *
- * Loads .env.test, runs Prisma migrations against the test DB, and provides
+ * Loads .env.test, pushes Prisma schema to the test DB, and provides
  * helpers to clear all tables between tests so each test starts fresh.
  *
  * Usage:
@@ -20,12 +20,12 @@ config({ path: '.env.test', override: true });
 let prismaClient: PrismaClient;
 
 /**
- * Creates the test DB schema by running `prisma migrate deploy`.
+ * Pushes the current Prisma schema to the test DB via `prisma db push`.
  * Safe to call in beforeAll — idempotent if schema hasn't changed.
  */
 export function setupIntegrationDb(): void {
-  console.log('🔧  Running Prisma migrations on test database...');
-  execSync('npx prisma migrate deploy', {
+  console.log('🔧  Pushing Prisma schema to test database...');
+  execSync('npx prisma db push --accept-data-loss', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
   });

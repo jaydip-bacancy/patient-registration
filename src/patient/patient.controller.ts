@@ -19,12 +19,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { PatientService } from './patient.service';
 import { RegisterPatientDto } from './dto/register-patient.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -71,7 +68,7 @@ export class PatientController {
             occupation: 'Software Engineer',
             govtIdType: 'AADHAAR',
             govtIdNumber: '1234-5678-9012',
-            createdBy: 'staff-uuid',
+            createdBy: 'admin-uuid',
             isActive: true,
             createdAt: '2024-01-15T10:30:00.000Z',
             updatedAt: '2024-01-15T10:30:00.000Z',
@@ -88,8 +85,7 @@ export class PatientController {
   }
 
   @Get('search')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.STAFF, Role.ADMIN)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Search patients by phone',
     description: 'Returns active patients matching the phone query (partial match supported).',
@@ -116,8 +112,7 @@ export class PatientController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get patient by ID',
     description: 'Returns full patient profile including emergency contacts, insurance, medical snapshot, and consent.',
@@ -130,8 +125,7 @@ export class PatientController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Soft delete a patient',

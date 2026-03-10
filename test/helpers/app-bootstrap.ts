@@ -1,9 +1,14 @@
+import 'dotenv/config';
+// Ensure E2E tests use a known JWT secret for token validation
+if (typeof process.env.JEST_WORKER_ID !== 'undefined') {
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-for-testing';
+}
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { EmailService } from '../../src/email/email.service';
 import { GlobalExceptionFilter } from '../../src/common/filters/http-exception.filter';
-import { ResponseInterceptor } from '../../src/common/interceptors/response.interceptor';
 import { createPrismaMock, PrismaMock } from './prisma-mock';
 
 /**
@@ -17,6 +22,8 @@ export async function createTestApp(prismaMock: PrismaMock): Promise<INestApplic
   })
     .overrideProvider(PrismaService)
     .useValue(prismaMock)
+    .overrideProvider(EmailService)
+    .useValue({ sendOtpEmail: jest.fn().mockResolvedValue(undefined) })
     .compile();
 
   const app = moduleFixture.createNestApplication();
@@ -30,7 +37,6 @@ export async function createTestApp(prismaMock: PrismaMock): Promise<INestApplic
     }),
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
-  app.useGlobalInterceptors(new ResponseInterceptor());
 
   await app.init();
   return app;

@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { RegisterAdminDto } from './dto/register-admin.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Public } from './decorators/public.decorator';
@@ -14,9 +15,9 @@ export class AuthController {
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Send OTP to phone number',
+    summary: 'Send OTP to email',
     description:
-      'Sends a one-time password to the provided phone number. Creates a new user account if the phone is not already registered. In non-production environments, the OTP is also returned in the response for testing.',
+      'Sends a one-time password to the provided email. Email must already be registered (via role-specific registration). In non-production, OTP is returned in the response for testing.',
   })
   @ApiBody({ type: SendOtpDto })
   @ApiResponse({
@@ -28,14 +29,14 @@ export class AuthController {
         statusCode: 200,
         message: 'Request processed successfully',
         data: {
-          message: 'OTP sent to +919876543210',
+          message: 'OTP sent to user@example.com',
           otp: '123456',
         },
         timestamp: '2024-01-15T10:30:00.000Z',
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Invalid phone number format' })
+  @ApiResponse({ status: 400, description: 'Invalid email format or email not registered' })
   sendOtp(@Body() dto: SendOtpDto) {
     return this.authService.sendOtp(dto);
   }
@@ -46,7 +47,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify OTP and receive JWT tokens',
     description:
-      'Validates the OTP for the given phone number. On success, returns a JWT access token (15 min expiry) and refresh token (7 day expiry).',
+      'Validates the OTP for the given email. On success, returns a JWT access token (15 min expiry) and refresh token (7 day expiry).',
   })
   @ApiBody({ type: VerifyOtpDto })
   @ApiResponse({
@@ -62,7 +63,7 @@ export class AuthController {
           refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
           user: {
             id: 'uuid-here',
-            phone: '+919876543210',
+            email: 'user@example.com',
             role: 'PATIENT',
           },
         },
@@ -107,5 +108,16 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   refresh(@Body('refreshToken') token: string) {
     return this.authService.refreshToken(token);
+  }
+
+  @Public()
+  @Post('register/admin')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register admin (Public)' })
+  @ApiBody({ type: RegisterAdminDto })
+  @ApiResponse({ status: 201, description: 'Admin registered' })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
+  registerAdmin(@Body() dto: RegisterAdminDto) {
+    return this.authService.registerAdmin(dto);
   }
 }

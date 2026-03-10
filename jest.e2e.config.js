@@ -2,6 +2,7 @@
 module.exports = {
   displayName: 'e2e',
   moduleFileExtensions: ['js', 'json', 'ts'],
+  setupFiles: ['<rootDir>/test/setup-e2e.ts'],
   rootDir: '.',
   testRegex: 'test/e2e/.*\\.e2e-spec\\.ts$',
   transform: { '^.+\\.(t|j)s$': 'ts-jest' },

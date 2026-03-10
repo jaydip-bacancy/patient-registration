@@ -16,22 +16,18 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { MedicalSnapshotService } from './medical-snapshot.service';
 import { CreateMedicalSnapshotDto } from './dto/create-medical-snapshot.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('Medical Snapshot')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/medical-snapshot')
 export class MedicalSnapshotController {
   constructor(private readonly medicalSnapshotService: MedicalSnapshotService) {}
 
   @Post()
-  @Roles(Role.STAFF, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Create or update medical snapshot',
@@ -73,7 +69,6 @@ export class MedicalSnapshotController {
   }
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get medical snapshot for a patient' })
   @ApiParam({ name: 'patientId', description: 'Patient UUID', type: String })
   @ApiResponse({ status: 200, description: 'Medical snapshot found' })

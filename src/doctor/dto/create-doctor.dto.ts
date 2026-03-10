@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
-  IsUUID,
   MaxLength,
   Min,
   MinLength,
@@ -15,9 +14,13 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateDoctorDto {
-  @ApiProperty({ example: 'uuid-of-user', description: 'User account UUID to link doctor profile to' })
-  @IsUUID()
-  userId: string;
+  @ApiProperty({
+    example: 'ananya.patel@hospital.com',
+    description: 'Doctor email for login (creates User + Doctor profile)',
+  })
+  @IsString()
+  @IsEmail()
+  email: string;
 
   @ApiProperty({ example: 'Ananya' })
   @IsString()
@@ -34,11 +37,6 @@ export class CreateDoctorDto {
   @ApiProperty({ example: '+919876543210' })
   @IsPhoneNumber()
   phone: string;
-
-  @ApiPropertyOptional({ example: 'ananya.patel@hospital.com' })
-  @IsOptional()
-  @IsEmail()
-  email?: string;
 
   @ApiProperty({ example: 'Cardiology' })
   @IsString()

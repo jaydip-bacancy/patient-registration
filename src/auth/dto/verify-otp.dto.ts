@@ -1,17 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsPhoneNumber, IsString, Length } from 'class-validator';
+import { IsEmail, IsString, Length } from 'class-validator';
 
 export class VerifyOtpDto {
   @ApiProperty({
-    description: 'Phone number in E.164 format',
-    example: '+919876543210',
+    description: 'Email address used to request the OTP',
+    example: 'user@example.com',
   })
   @IsString()
-  @IsPhoneNumber(null as any)
-  phone: string;
+  @IsEmail()
+  email: string;
 
   @ApiProperty({
-    description: 'One-time password sent to the phone',
+    description: 'One-time password sent to the email',
     example: '123456',
     minLength: 6,
     maxLength: 6,

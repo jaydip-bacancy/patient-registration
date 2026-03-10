@@ -1,9 +1,9 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ConflictException } from '@nestjs/common';
 import * as request from 'supertest';
 import { createTestApp, createPrismaMock } from '../helpers/app-bootstrap';
 import {
-  mockStaffUser,
   mockAdminUser,
+  mockPatientUser,
   mockPatient,
   mockPatientFull,
   registerPatientDto,
@@ -13,8 +13,8 @@ import { generateTestToken } from '../helpers/jwt-token-factory';
 describe('Patient — E2E', () => {
   let app: INestApplication;
   let prisma: ReturnType<typeof createPrismaMock>;
-  let staffToken: string;
   let adminToken: string;
+  let patientToken: string;
 
   beforeAll(async () => {
     // Ensure test uses the test secret
@@ -23,8 +23,8 @@ describe('Patient — E2E', () => {
     prisma = createPrismaMock();
     app = await createTestApp(prisma);
 
-    staffToken = generateTestToken(mockStaffUser.id, mockStaffUser.phone, mockStaffUser.role);
-    adminToken = generateTestToken(mockAdminUser.id, mockAdminUser.phone, mockAdminUser.role);
+    adminToken = generateTestToken(mockAdminUser.id, mockAdminUser.email, mockAdminUser.role);
+    patientToken = generateTestToken(mockPatientUser.id, mockPatientUser.email, mockPatientUser.role);
   });
 
   afterAll(async () => {
@@ -34,26 +34,28 @@ describe('Patient — E2E', () => {
   beforeEach(() => {
     // JwtStrategy calls user.findUnique to validate the token on each request
     prisma.user.findUnique.mockImplementation(({ where }) => {
-      if (where?.id === mockStaffUser.id) return Promise.resolve(mockStaffUser);
       if (where?.id === mockAdminUser.id) return Promise.resolve(mockAdminUser);
+      if (where?.id === mockPatientUser.id) return Promise.resolve(mockPatientUser);
       return Promise.resolve(null);
     });
   });
 
   afterEach(() => jest.clearAllMocks());
 
-  // ── POST /patients ─────────────────────────────────────────────────────────
+  // ── POST /patients/register ─────────────────────────────────────────────────
 
-  describe('POST /api/v1/patients', () => {
+  describe('POST /api/v1/patients/register', () => {
     it('registers a patient and returns 201 with UHID', async () => {
       prisma.$transaction.mockImplementation(async (cb: (tx: unknown) => unknown) => cb(prisma));
-      prisma.patient.findUnique.mockResolvedValueOnce(null); // no existing patient
+      prisma.patient.findUnique.mockResolvedValueOnce(null);
+      prisma.user.findUnique.mockResolvedValueOnce(null); // no existing user
+      prisma.user.create.mockResolvedValue({ id: 'new-user-id', email: registerPatientDto.email } as never);
       prisma.patient.create.mockResolvedValue(mockPatient);
       prisma.auditLog.create.mockResolvedValue({} as never);
 
       const res = await request(app.getHttpServer())
-        .post('/api/v1/patients')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .post('/api/v1/patients/register')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(registerPatientDto)
         .expect(201);
 
@@ -62,28 +64,38 @@ describe('Patient — E2E', () => {
     });
 
     it('returns 409 when phone already exists', async () => {
-      prisma.$transaction.mockRejectedValue({ status: 409, message: 'Patient with phone +919876543210 already exists' });
+      prisma.$transaction.mockRejectedValue(
+        new ConflictException('Patient with phone +919876543210 already exists'),
+      );
 
       const res = await request(app.getHttpServer())
-        .post('/api/v1/patients')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .post('/api/v1/patients/register')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(registerPatientDto)
         .expect(409);
 
       expect(res.body.success).toBe(false);
     });
 
-    it('returns 401 when no token is provided', async () => {
-      await request(app.getHttpServer())
-        .post('/api/v1/patients')
+    it('succeeds without token (register is public)', async () => {
+      prisma.$transaction.mockImplementation(async (cb: (tx: unknown) => unknown) => cb(prisma));
+      prisma.patient.findUnique.mockResolvedValueOnce(null);
+      prisma.user.findUnique.mockResolvedValueOnce(null);
+      prisma.user.create.mockResolvedValue({ id: 'new-user-id' } as never);
+      prisma.patient.create.mockResolvedValue(mockPatient);
+      prisma.auditLog.create.mockResolvedValue({} as never);
+
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/patients/register')
         .send(registerPatientDto)
-        .expect(401);
+        .expect(201);
+      expect(res.body.success).toBe(true);
     });
 
     it('returns 400 when required fields are missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/patients')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .post('/api/v1/patients/register')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ firstName: 'Raj' }) // missing required fields
         .expect(400);
 
@@ -99,7 +111,7 @@ describe('Patient — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .get(`/api/v1/patients/${mockPatient.id}`)
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -112,7 +124,7 @@ describe('Patient — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .get('/api/v1/patients/non-existent-id')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(404);
 
       expect(res.body.success).toBe(false);
@@ -127,7 +139,7 @@ describe('Patient — E2E', () => {
 
       const res = await request(app.getHttpServer())
         .get('/api/v1/patients/search?phone=+9198765')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
@@ -153,10 +165,10 @@ describe('Patient — E2E', () => {
       expect(res.body.data.message).toBe('Patient deactivated successfully');
     });
 
-    it('returns 403 when STAFF role tries to delete', async () => {
+    it('returns 403 when non-ADMIN role tries to delete', async () => {
       const res = await request(app.getHttpServer())
         .delete(`/api/v1/patients/${mockPatient.id}`)
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${patientToken}`)
         .expect(403);
 
       expect(res.body.success).toBe(false);

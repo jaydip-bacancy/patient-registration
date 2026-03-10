@@ -30,26 +30,26 @@ describe('Auth — Integration', () => {
 
   afterAll(async () => teardownIntegrationDb());
 
-  // ── User creation on sendOtp ───────────────────────────────────────────────
+  // ── User creation (email-based) ─────────────────────────────────────────────
 
   describe('User creation', () => {
-    it('creates a PATIENT user when a new phone is registered', async () => {
+    it('creates a PATIENT user with email', async () => {
       await prisma.user.create({
-        data: { phone: '+919876543210', role: 'PATIENT' },
+        data: { email: 'patient@example.com', role: 'PATIENT' },
       });
 
-      const user = await prisma.user.findUnique({ where: { phone: '+919876543210' } });
+      const user = await prisma.user.findUnique({ where: { email: 'patient@example.com' } });
 
       expect(user).not.toBeNull();
       expect(user!.role).toBe('PATIENT');
       expect(user!.isVerified).toBe(false);
     });
 
-    it('does not allow duplicate phone numbers', async () => {
-      await prisma.user.create({ data: { phone: '+919876543210', role: 'PATIENT' } });
+    it('does not allow duplicate emails', async () => {
+      await prisma.user.create({ data: { email: 'patient@example.com', role: 'PATIENT' } });
 
       await expect(
-        prisma.user.create({ data: { phone: '+919876543210', role: 'PATIENT' } }),
+        prisma.user.create({ data: { email: 'patient@example.com', role: 'PATIENT' } }),
       ).rejects.toThrow();
     });
   });
@@ -58,7 +58,7 @@ describe('Auth — Integration', () => {
 
   describe('OTP lifecycle', () => {
     it('stores a PENDING OTP for the user', async () => {
-      const user = await prisma.user.create({ data: { phone: '+919876543210', role: 'PATIENT' } });
+      const user = await prisma.user.create({ data: { email: 'patient@example.com', role: 'PATIENT' } });
 
       await prisma.otp.create({
         data: {
@@ -75,7 +75,7 @@ describe('Auth — Integration', () => {
     });
 
     it('expires previous OTPs when a new one is requested', async () => {
-      const user = await prisma.user.create({ data: { phone: '+919876543210', role: 'PATIENT' } });
+      const user = await prisma.user.create({ data: { email: 'patient@example.com', role: 'PATIENT' } });
 
       // Create initial OTP
       await prisma.otp.create({
@@ -99,7 +99,7 @@ describe('Auth — Integration', () => {
     });
 
     it('marks user as isVerified after OTP is consumed', async () => {
-      const user = await prisma.user.create({ data: { phone: '+919876543210', role: 'PATIENT' } });
+      const user = await prisma.user.create({ data: { email: 'patient@example.com', role: 'PATIENT' } });
       const otp = await prisma.otp.create({
         data: { userId: user.id, code: '482910', status: 'PENDING', expiresAt: new Date(Date.now() + 5 * 60_000) },
       });
@@ -117,7 +117,7 @@ describe('Auth — Integration', () => {
     });
 
     it('does not find an expired OTP when verifying', async () => {
-      const user = await prisma.user.create({ data: { phone: '+919876543210', role: 'PATIENT' } });
+      const user = await prisma.user.create({ data: { email: 'patient@example.com', role: 'PATIENT' } });
 
       await prisma.otp.create({
         data: {

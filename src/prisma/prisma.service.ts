@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import { SYSTEM_USER_ID } from '../common/constants';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -18,6 +19,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleInit(): Promise<void> {
     await this.$connect();
     this.logger.log('Database connection established');
+    await this.ensureSystemUser();
+  }
+
+  private async ensureSystemUser(): Promise<void> {
+    try {
+      await this.user.upsert({
+        where: { id: SYSTEM_USER_ID },
+        update: {},
+        create: {
+          id: SYSTEM_USER_ID,
+          email: 'system@hospital.com',
+          role: Role.ADMIN,
+          isVerified: true,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`Could not ensure system user: ${err}`);
+    }
   }
 
   async onModuleDestroy(): Promise<void> {

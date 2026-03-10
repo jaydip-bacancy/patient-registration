@@ -1,8 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+
+jest.mock('../email/email.service', () => ({
+  EmailService: jest.fn().mockImplementation(() => ({
+    sendOtpEmail: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { createPrismaMock } from '../../test/helpers/prisma-mock';
 import { mockPatientUser, mockOtp } from '../../test/helpers/fixtures';
 import { OtpStatus, Role } from '@prisma/client';
@@ -23,6 +30,10 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: { signAsync: jest.fn(), verifyAsync: jest.fn() },
         },
+        {
+          provide: EmailService,
+          useValue: { sendOtpEmail: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
@@ -35,27 +46,24 @@ describe('AuthService', () => {
   // ── sendOtp ────────────────────────────────────────────────────────────────
 
   describe('sendOtp', () => {
-    it('creates a new user when phone is not registered', async () => {
+    it('throws BadRequestException when email is not registered', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
-      prismaMock.user.create.mockResolvedValue(mockPatientUser);
-      prismaMock.otp.updateMany.mockResolvedValue({ count: 0 });
-      prismaMock.otp.create.mockResolvedValue(mockOtp);
 
-      const result = await service.sendOtp({ phone: '+919876543210' });
-
-      expect(prismaMock.user.create).toHaveBeenCalledWith({
-        data: { phone: '+919876543210', role: Role.PATIENT },
-      });
-      expect(prismaMock.otp.create).toHaveBeenCalledTimes(1);
-      expect(result.message).toContain('+919876543210');
+      await expect(service.sendOtp({ email: 'unknown@example.com' })).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.sendOtp({ email: 'unknown@example.com' })).rejects.toThrow(
+        'Email not registered',
+      );
+      expect(prismaMock.otp.create).not.toHaveBeenCalled();
     });
 
-    it('reuses existing user when phone is already registered', async () => {
+    it('sends OTP when email is already registered', async () => {
       prismaMock.user.findUnique.mockResolvedValue(mockPatientUser);
       prismaMock.otp.updateMany.mockResolvedValue({ count: 1 });
       prismaMock.otp.create.mockResolvedValue(mockOtp);
 
-      await service.sendOtp({ phone: '+919876543210' });
+      await service.sendOtp({ email: 'user@example.com' });
 
       expect(prismaMock.user.create).not.toHaveBeenCalled();
       expect(prismaMock.otp.updateMany).toHaveBeenCalledWith({
@@ -69,7 +77,7 @@ describe('AuthService', () => {
       prismaMock.otp.updateMany.mockResolvedValue({ count: 2 });
       prismaMock.otp.create.mockResolvedValue(mockOtp);
 
-      await service.sendOtp({ phone: '+919876543210' });
+      await service.sendOtp({ email: 'user@example.com' });
 
       // updateMany must be called before create
       expect(prismaMock.otp.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
@@ -83,7 +91,7 @@ describe('AuthService', () => {
       prismaMock.otp.updateMany.mockResolvedValue({ count: 0 });
       prismaMock.otp.create.mockResolvedValue(mockOtp);
 
-      const result = await service.sendOtp({ phone: '+919876543210' });
+      const result = await service.sendOtp({ email: 'user@example.com' });
 
       expect(result.otp).toBeDefined();
       expect(result.otp).toHaveLength(6);
@@ -95,7 +103,7 @@ describe('AuthService', () => {
       prismaMock.otp.updateMany.mockResolvedValue({ count: 0 });
       prismaMock.otp.create.mockResolvedValue(mockOtp);
 
-      const result = await service.sendOtp({ phone: '+919876543210' });
+      const result = await service.sendOtp({ email: 'user@example.com' });
 
       expect(result.otp).toBeUndefined();
       process.env.NODE_ENV = 'development';
@@ -111,18 +119,18 @@ describe('AuthService', () => {
       prismaMock.$transaction.mockResolvedValue([]);
       jwtService.signAsync.mockResolvedValue('mock-token' as never);
 
-      const result = await service.verifyOtp({ phone: '+919876543210', otp: '482910' });
+      const result = await service.verifyOtp({ email: 'user@example.com', otp: '482910' });
 
       expect(result.accessToken).toBe('mock-token');
       expect(result.refreshToken).toBe('mock-token');
-      expect(result.user.phone).toBe('+919876543210');
+      expect(result.user.email).toBe('user@example.com');
     });
 
-    it('throws UnauthorizedException when phone is not registered', async () => {
+    it('throws UnauthorizedException when email is not registered', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.verifyOtp({ phone: '+919876543210', otp: '000000' }),
+        service.verifyOtp({ email: 'user@example.com', otp: '000000' }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -131,7 +139,7 @@ describe('AuthService', () => {
       prismaMock.otp.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.verifyOtp({ phone: '+919876543210', otp: '999999' }),
+        service.verifyOtp({ email: 'user@example.com', otp: '999999' }),
       ).rejects.toThrow(new UnauthorizedException('Invalid or expired OTP'));
     });
 
@@ -141,7 +149,7 @@ describe('AuthService', () => {
       prismaMock.$transaction.mockResolvedValue([]);
       jwtService.signAsync.mockResolvedValue('mock-token' as never);
 
-      await service.verifyOtp({ phone: '+919876543210', otp: '482910' });
+      await service.verifyOtp({ email: 'user@example.com', otp: '482910' });
 
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     });
@@ -153,7 +161,7 @@ describe('AuthService', () => {
     it('returns a new accessToken for a valid refresh token', async () => {
       jwtService.verifyAsync.mockResolvedValue({
         sub: mockPatientUser.id,
-        phone: mockPatientUser.phone,
+        email: mockPatientUser.email,
         role: mockPatientUser.role,
       } as never);
       prismaMock.user.findUnique.mockResolvedValue({ ...mockPatientUser, isVerified: true });

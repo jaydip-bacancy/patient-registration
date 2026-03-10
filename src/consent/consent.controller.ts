@@ -16,24 +16,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { ConsentService } from './consent.service';
 import { CreateConsentDto } from './dto/create-consent.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Consent')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/consent')
 export class ConsentController {
   constructor(private readonly consentService: ConsentService) {}
 
   @Post()
-  @Roles(Role.STAFF, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Capture patient consent',
@@ -75,7 +71,6 @@ export class ConsentController {
   }
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get consent record for a patient' })
   @ApiParam({ name: 'patientId', description: 'Patient UUID', type: String })
   @ApiResponse({ status: 200, description: 'Consent record found' })

@@ -16,24 +16,20 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { InsuranceService } from './insurance.service';
 import { CreateInsuranceDto } from './dto/create-insurance.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Insurance')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Controller('patients/:patientId/insurance')
 export class InsuranceController {
   constructor(private readonly insuranceService: InsuranceService) {}
 
   @Post()
-  @Roles(Role.STAFF, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Add insurance record to patient',
@@ -74,7 +70,6 @@ export class InsuranceController {
   }
 
   @Get()
-  @Roles(Role.STAFF, Role.ADMIN, Role.PATIENT)
   @ApiOperation({ summary: 'Get all insurance records for a patient' })
   @ApiParam({ name: 'patientId', description: 'Patient UUID', type: String })
   @ApiResponse({ status: 200, description: 'Insurance records' })
