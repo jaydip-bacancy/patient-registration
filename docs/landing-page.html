@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Patient Management System</title>
+    <meta
+      name="description"
+      content="A patient-facing landing page for a patient management system focused on appointments, consultations, and ongoing care."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f8f2e8;
+        --ink: #13201e;
+        --teal: #0f6c6b;
+        --deep: #0b3b3b;
+        --copper: #d5714d;
+        --sun: #f2b24a;
+        --mist: #d7e3dd;
+        --stone: #2a3b38;
+        --glass: rgba(255, 255, 255, 0.6);
+        --shadow: 0 32px 80px rgba(14, 25, 24, 0.18);
+        --shadow-soft: 0 18px 40px rgba(14, 25, 24, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "IBM Plex Sans", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at 15% 15%, #fff6df 0%, rgba(255, 246, 223, 0.2) 42%),
+          radial-gradient(circle at 80% 20%, rgba(15, 108, 107, 0.22) 0%, rgba(15, 108, 107, 0) 55%),
+          radial-gradient(circle at 35% 85%, rgba(211, 113, 77, 0.16) 0%, rgba(211, 113, 77, 0) 60%),
+          var(--paper);
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image: repeating-linear-gradient(
+          45deg,
+          rgba(19, 32, 30, 0.02) 0,
+          rgba(19, 32, 30, 0.02) 2px,
+          transparent 2px,
+          transparent 4px
+        );
+        mix-blend-mode: multiply;
+        opacity: 0.3;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 28px 24px 80px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        padding: 12px 0 36px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-weight: 600;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--teal), var(--deep));
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-family: "Fraunces", serif;
+        font-weight: 700;
+        font-size: 20px;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .brand span {
+        font-size: 18px;
+        letter-spacing: 0.02em;
+      }
+
+      nav {
+        display: flex;
+        gap: 18px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+      }
+
+      .nav-pill {
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(19, 32, 30, 0.15);
+        transition: transform 0.2s ease, background 0.2s ease;
+      }
+
+      .nav-pill:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 36px;
+        align-items: center;
+        padding-bottom: 48px;
+      }
+
+      .hero h1 {
+        font-family: "Fraunces", serif;
+        font-size: clamp(2.6rem, 4vw, 4rem);
+        margin: 0 0 18px;
+        line-height: 1.05;
+      }
+
+      .hero p {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        margin: 0 0 28px;
+        color: #24312f;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+
+      .cta-primary,
+      .cta-secondary {
+        border-radius: 999px;
+        padding: 12px 22px;
+        border: none;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .cta-primary {
+        background: var(--teal);
+        color: #fff;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .cta-secondary {
+        background: transparent;
+        border: 1px solid rgba(19, 32, 30, 0.2);
+        color: var(--ink);
+      }
+
+      .cta-primary:hover,
+      .cta-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+      }
+
+      .hero-card {
+        background: var(--glass);
+        border-radius: 26px;
+        padding: 26px;
+        border: 1px solid rgba(19, 32, 30, 0.15);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+      }
+
+      .hero-card h3 {
+        margin: 0 0 16px;
+        font-family: "Fraunces", serif;
+      }
+
+      .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .metric {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 16px;
+        padding: 14px;
+        border: 1px solid rgba(19, 32, 30, 0.12);
+      }
+
+      .metric span {
+        display: block;
+        font-size: 0.85rem;
+        color: #52605d;
+      }
+
+      .metric strong {
+        font-size: 1.3rem;
+        font-family: "Fraunces", serif;
+      }
+
+      section {
+        margin-top: 62px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .section-title h2 {
+        font-family: "Fraunces", serif;
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+        margin: 0;
+      }
+
+      .section-title p {
+        max-width: 440px;
+        margin: 0;
+        color: #3a4a47;
+      }
+
+      .module-grid {
+        margin-top: 30px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+      }
+
+      .module-card {
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(19, 32, 30, 0.12);
+        box-shadow: var(--shadow-soft);
+        transition: transform 0.2s ease;
+        min-height: 140px;
+      }
+
+      .module-card:hover {
+        transform: translateY(-4px);
+      }
+
+      .module-card h4 {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+      }
+
+      .module-card p {
+        margin: 0;
+        font-size: 0.92rem;
+        color: #485552;
+        line-height: 1.5;
+      }
+
+      .module-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #fff;
+        background: var(--deep);
+        padding: 4px 10px;
+        border-radius: 999px;
+        margin-bottom: 10px;
+      }
+
+      .journey {
+        display: grid;
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .journey-step {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 16px;
+        padding: 18px 20px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 20px;
+        border: 1px solid rgba(19, 32, 30, 0.12);
+      }
+
+      .journey-step span {
+        font-weight: 600;
+        color: var(--teal);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.75rem;
+      }
+
+      .journey-step h4 {
+        margin: 4px 0 6px;
+        font-size: 1.15rem;
+      }
+
+      .journey-step p {
+        margin: 0;
+        color: #485552;
+        line-height: 1.55;
+      }
+
+      .role-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .role-card {
+        padding: 20px;
+        border-radius: 20px;
+        background: #102b2a;
+        color: #f5f2ea;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .role-card h4 {
+        margin: 0 0 10px;
+        font-family: "Fraunces", serif;
+      }
+
+      .role-card p {
+        margin: 0;
+        color: rgba(245, 242, 234, 0.78);
+        line-height: 1.6;
+      }
+
+      .integrations {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .integration-tile {
+        padding: 18px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(19, 32, 30, 0.12);
+      }
+
+      .integration-tile strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .cta-panel {
+        margin-top: 70px;
+        padding: 32px;
+        border-radius: 28px;
+        background: linear-gradient(130deg, #0f6c6b 0%, #0b3b3b 60%);
+        color: #fff;
+        display: grid;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .cta-panel h3 {
+        font-family: "Fraunces", serif;
+        font-size: clamp(1.7rem, 3vw, 2.4rem);
+        margin: 0;
+      }
+
+      .cta-panel p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .cta-panel .cta-primary {
+        background: var(--sun);
+        color: #1f1a13;
+      }
+
+      .footnote {
+        margin-top: 50px;
+        font-size: 0.85rem;
+        color: #4c5a57;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+        animation: rise 0.8s ease forwards;
+      }
+
+      .reveal[data-delay="1"] {
+        animation-delay: 0.1s;
+      }
+
+      .reveal[data-delay="2"] {
+        animation-delay: 0.2s;
+      }
+
+      .reveal[data-delay="3"] {
+        animation-delay: 0.3s;
+      }
+
+      .reveal[data-delay="4"] {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 720px) {
+        nav {
+          display: none;
+        }
+
+        .journey-step {
+          grid-template-columns: 1fr;
+        }
+
+        .section-title {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .hero-card {
+          order: -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="brand">
+          <div class="brand-mark">PR</div>
+          <span>Patient Management System</span>
+        </div>
+        <nav>
+          <a class="nav-pill" href="#modules">Overview</a>
+          <a class="nav-pill" href="#journey">How it works</a>
+          <a class="nav-pill" href="#roles">For everyone</a>
+          <a class="nav-pill" href="#trust">Privacy</a>
+        </nav>
+      </header>
+
+      <section class="hero">
+        <div class="reveal" data-delay="1">
+          <h1>Care that follows you everywhere.</h1>
+          <p>
+            Find the right doctor, book an appointment in minutes, consult from home, and keep every
+            prescription, report, and follow-up in one place. A patient management system keeps your
+            care organized so you can focus on getting better.
+          </p>
+          <div class="cta-row">
+            <button class="cta-primary">Book an Appointment</button>
+            <button class="cta-secondary">Talk to a Doctor</button>
+          </div>
+        </div>
+        <div class="hero-card reveal" data-delay="2">
+          <h3>What patients love</h3>
+          <div class="hero-metrics">
+            <div class="metric">
+              <span>Faster bookings</span>
+              <strong>Less waiting</strong>
+            </div>
+            <div class="metric">
+              <span>Care access</span>
+              <strong>Anytime</strong>
+            </div>
+            <div class="metric">
+              <span>Health records</span>
+              <strong>Always with you</strong>
+            </div>
+            <div class="metric">
+              <span>Follow-ups</span>
+              <strong>Never missed</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="modules">
+        <div class="section-title reveal" data-delay="1">
+          <h2>Everything you need for everyday care</h2>
+          <p>
+            A patient management system brings appointments, consultations, and health records
+            together so your care feels simple and connected.
+          </p>
+        </div>
+        <div class="module-grid">
+          <div class="module-card reveal" data-delay="1">
+            <div class="module-tag">Discover</div>
+            <h4>Find Doctors</h4>
+            <p>Search by specialty, experience, and availability.</p>
+          </div>
+          <div class="module-card reveal" data-delay="2">
+            <div class="module-tag">Book</div>
+            <h4>Appointments</h4>
+            <p>Choose the right time for in-clinic or at-home care.</p>
+          </div>
+          <div class="module-card reveal" data-delay="3">
+            <div class="module-tag">Consult</div>
+            <h4>Video Visits</h4>
+            <p>Talk to trusted doctors without traveling.</p>
+          </div>
+          <div class="module-card reveal" data-delay="4">
+            <div class="module-tag">Profiles</div>
+            <h4>Family Health</h4>
+            <p>Manage parents, kids, and dependents in one account.</p>
+          </div>
+          <div class="module-card reveal" data-delay="1">
+            <div class="module-tag">Records</div>
+            <h4>Visit History</h4>
+            <p>Every consultation and treatment stored in one timeline.</p>
+          </div>
+          <div class="module-card reveal" data-delay="2">
+            <div class="module-tag">Vitals</div>
+            <h4>Health Trends</h4>
+            <p>Track key readings over time to stay on top of your health.</p>
+          </div>
+          <div class="module-card reveal" data-delay="3">
+            <div class="module-tag">Rx</div>
+            <h4>Prescriptions</h4>
+            <p>Clear medication instructions you can access anytime.</p>
+          </div>
+          <div class="module-card reveal" data-delay="4">
+            <div class="module-tag">Labs</div>
+            <h4>Test Results</h4>
+            <p>Reports are easy to find and share with doctors.</p>
+          </div>
+          <div class="module-card reveal" data-delay="1">
+            <div class="module-tag">Reminders</div>
+            <h4>Care Alerts</h4>
+            <p>Never miss appointments, medications, or follow-ups.</p>
+          </div>
+          <div class="module-card reveal" data-delay="2">
+            <div class="module-tag">Support</div>
+            <h4>Care Coordination</h4>
+            <p>Get help scheduling, rescheduling, and next steps.</p>
+          </div>
+          <div class="module-card reveal" data-delay="3">
+            <div class="module-tag">Consent</div>
+            <h4>Privacy Controls</h4>
+            <p>Know who can access your health information.</p>
+          </div>
+          <div class="module-card reveal" data-delay="4">
+            <div class="module-tag">Comfort</div>
+            <h4>Peace of Mind</h4>
+            <p>Everything stays in one place for you and your caregivers.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="journey">
+        <div class="section-title reveal" data-delay="1">
+          <h2>How it works for patients</h2>
+          <p>From the first search to ongoing care, each step stays connected.</p>
+        </div>
+        <div class="journey">
+          <div class="journey-step reveal" data-delay="1">
+            <div>
+              <span>Search</span>
+            </div>
+            <div>
+              <h4>Find the right doctor</h4>
+              <p>Browse doctors by specialty, language, and availability.</p>
+            </div>
+          </div>
+          <div class="journey-step reveal" data-delay="2">
+            <div>
+              <span>Book</span>
+            </div>
+            <div>
+              <h4>Choose a time that works</h4>
+              <p>Pick an in-clinic or online appointment in minutes.</p>
+            </div>
+          </div>
+          <div class="journey-step reveal" data-delay="3">
+            <div>
+              <span>Consult</span>
+            </div>
+            <div>
+              <h4>Get care without the hassle</h4>
+              <p>Speak to a doctor, share concerns, and receive guidance.</p>
+            </div>
+          </div>
+          <div class="journey-step reveal" data-delay="4">
+            <div>
+              <span>Track</span>
+            </div>
+            <div>
+              <h4>Keep everything together</h4>
+              <p>Prescriptions, reports, and visit notes stay organized.</p>
+            </div>
+          </div>
+          <div class="journey-step reveal" data-delay="4">
+            <div>
+              <span>Follow Up</span>
+            </div>
+            <div>
+              <h4>Stay on top of your care</h4>
+              <p>Reminders and summaries help you stay consistent.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="roles">
+        <div class="section-title reveal" data-delay="1">
+          <h2>Designed for everyone in the care journey</h2>
+          <p>
+            Patients, families, and care teams all stay in sync without repeating information.
+          </p>
+        </div>
+        <div class="role-grid">
+          <div class="role-card reveal" data-delay="1">
+            <h4>Patients</h4>
+            <p>Book appointments, consult, and keep your health records in one place.</p>
+          </div>
+          <div class="role-card reveal" data-delay="2">
+            <h4>Families</h4>
+            <p>Support loved ones with shared access to appointments and updates.</p>
+          </div>
+          <div class="role-card reveal" data-delay="3">
+            <h4>Doctors</h4>
+            <p>Review history quickly and provide more informed care.</p>
+          </div>
+          <div class="role-card reveal" data-delay="4">
+            <h4>Clinics</h4>
+            <p>Coordinate schedules and follow-ups without confusion.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="trust">
+        <div class="section-title reveal" data-delay="1">
+          <h2>Privacy you can trust</h2>
+          <p>Your health information stays protected and in your control.</p>
+        </div>
+        <div class="integrations">
+          <div class="integration-tile reveal" data-delay="1">
+            <strong>Consent first</strong>
+            You decide how your information is shared.
+          </div>
+          <div class="integration-tile reveal" data-delay="2">
+            <strong>Clear access</strong>
+            Only the right people see what they need.
+          </div>
+          <div class="integration-tile reveal" data-delay="3">
+            <strong>Care continuity</strong>
+            Your records travel with you across visits.
+          </div>
+          <div class="integration-tile reveal" data-delay="4">
+            <strong>Patient focus</strong>
+            Everything is built to make care easier and kinder.
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-panel reveal" data-delay="2">
+        <h3>Ready to speak to a doctor today?</h3>
+        <p>
+          Book a visit in minutes and keep every step of your care in one place.
+        </p>
+        <div class="cta-row">
+          <button class="cta-primary">Start a Consultation</button>
+          <button class="cta-secondary">See Available Doctors</button>
+        </div>
+      </section>
+
+      <div class="footnote">
+        <span>Patient Management System - care that stays connected.</span>
+        <span>Built for clinics, hospitals, and everyday health needs.</span>
+      </div>
+    </div>
+  </body>
+</html>
